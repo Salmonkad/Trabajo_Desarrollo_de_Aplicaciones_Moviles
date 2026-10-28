@@ -140,4 +140,7 @@ class DocumentoViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun onCentroChange(valor: String) {
+        uiState = uiState.copy(centroSalud = valor)
+    }
 }

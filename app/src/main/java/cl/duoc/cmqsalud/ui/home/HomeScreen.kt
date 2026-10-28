@@ -49,7 +49,7 @@ fun HomeScreen(
         else documentos.filter { it.titulo.contains(filtro, ignoreCase = true) }
     }
 
-    // 1. Diálogo de confirmación de eliminación
+    // confirmación de eliminación
     if (docParaEliminar != null) {
         AlertDialog(
             onDismissRequest = { docParaEliminar = null },
@@ -74,7 +74,7 @@ fun HomeScreen(
         )
     }
 
-    // 2. Diálogo de vista rápida con imagen completa y notas
+    // vista rápida con imagen completa y notas
     if (docParaVer != null) {
         Dialog(onDismissRequest = { docParaVer = null }) {
             Card(

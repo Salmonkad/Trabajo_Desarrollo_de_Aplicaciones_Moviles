@@ -48,6 +48,7 @@ fun crearArchivoUri(context: Context): Pair<File, Uri> {
 fun RegistroScreen(
     state: RegistroUiState,
     onTituloChange: (String) -> Unit,
+    onCentroChange: (String) -> Unit = {},
     onCategoriaChange: (CategoriaDocumento) -> Unit,
     onObservacionesChange: (String) -> Unit,
     onFotoCapturada: (String) -> Unit,
@@ -56,8 +57,9 @@ fun RegistroScreen(
 ) {
     val context = LocalContext.current
     var uriTemp by remember { mutableStateOf<Uri?>(null) }
+    var expandidoCentro by remember { mutableStateOf(false) }
+    val centros = listOf("CESFAM Quilpué", "CESFAM Belloto Sur", "CESFAM Aviador Acevedo", "SAPU Pompeya")
 
-    // 1. Lanzador para la captura de fotos
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { exitoso ->
@@ -66,7 +68,6 @@ fun RegistroScreen(
         }
     }
 
-    // 2. Lanzador para solicitar permiso de cámara en tiempo de ejecución
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { concedido ->
@@ -81,7 +82,6 @@ fun RegistroScreen(
         }
     }
 
-    // 3. Lanzador para seleccionar imagen de la Galería
     val fileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uriSeleccionado ->
@@ -89,18 +89,6 @@ fun RegistroScreen(
             onFotoCapturada(it.toString())
         }
     }
-
-    // 4. Configuración para evitar texto blanco en modo oscuro
-    val campoTextoColores = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = DarkNavyColor,
-        unfocusedTextColor = DarkNavyColor,
-        focusedContainerColor = Color.White,
-        unfocusedContainerColor = Color.White,
-        focusedLabelColor = TealColor,
-        unfocusedLabelColor = Color.Gray,
-        focusedBorderColor = TealColor,
-        unfocusedBorderColor = Color.LightGray
-    )
 
     Scaffold(
         topBar = {
@@ -121,11 +109,46 @@ fun RegistroScreen(
                 .padding(20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            // Selector de Centro de Salud emisor
+            Text("Centro de Salud:", fontWeight = FontWeight.Bold, color = DarkNavyColor)
+            Spacer(modifier = Modifier.height(6.dp))
+
+            ExposedDropdownMenuBox(
+                expanded = expandidoCentro,
+                onExpandedChange = { expandidoCentro = !expandidoCentro },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = state.centroSalud,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Centro Emisor") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoCentro) },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expandidoCentro,
+                    onDismissRequest = { expandidoCentro = false }
+                ) {
+                    centros.forEach { opcion ->
+                        DropdownMenuItem(
+                            text = { Text(opcion) },
+                            onClick = {
+                                onCentroChange(opcion)
+                                expandidoCentro = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             OutlinedTextField(
                 value = state.titulo,
                 onValueChange = onTituloChange,
                 label = { Text("Título del Documento *") },
-                colors = campoTextoColores,
                 isError = state.errorTitulo != null,
                 supportingText = { state.errorTitulo?.let { Text(it) } },
                 modifier = Modifier.fillMaxWidth()
@@ -191,16 +214,12 @@ fun RegistroScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Botones de acción: Cámara con permiso y Subir Archivo
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 OutlinedButton(
-                    onClick = {
-                        // Solicita permiso antes de intentar abrir la cámara nativa
-                        permissionLauncher.launch(android.Manifest.permission.CAMERA)
-                    },
+                    onClick = { permissionLauncher.launch(android.Manifest.permission.CAMERA) },
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.weight(1f)
                 ) {
@@ -226,7 +245,6 @@ fun RegistroScreen(
                 value = state.observaciones,
                 onValueChange = onObservacionesChange,
                 label = { Text("Observaciones / Notas") },
-                colors = campoTextoColores,
                 maxLines = 3,
                 modifier = Modifier.fillMaxWidth()
             )

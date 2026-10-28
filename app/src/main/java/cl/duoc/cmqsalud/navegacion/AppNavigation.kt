@@ -67,6 +67,7 @@ fun CMQSaludApp(viewModel: DocumentoViewModel = viewModel()) {
             RegistroScreen(
                 state = viewModel.uiState,
                 onTituloChange = viewModel::onTituloChange,
+                onCentroChange = viewModel::onCentroChange,
                 onCategoriaChange = viewModel::onCategoriaChange,
                 onObservacionesChange = viewModel::onObservacionesChange,
                 onFotoCapturada = viewModel::onFotoCapturada,
