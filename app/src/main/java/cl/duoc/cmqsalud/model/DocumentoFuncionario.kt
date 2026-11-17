@@ -3,19 +3,28 @@ package cl.duoc.cmqsalud.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+enum class PerfilUsuario(val etiqueta: String) {
+    FUNCIONARIO("Funcionario"),
+    JEFATURA("Jefatura"),
+    ADMINISTRATIVO("Administrativo"),
+    RECURSOS_HUMANOS("Recursos Humanos"),
+    ADMINISTRADOR("Administrador del Sistema")
+}
+
 enum class CategoriaDocumento(val etiqueta: String) {
-    CERTIFICADO("Certificado"),
-    INFORME("Informe Sanitario"),
-    HISTORIAL("Historial Clínico"),
+    CONTRATO("Contrato y Anexos"),
+    CERTIFICADO("Certificado Laboral"),
+    PERMISO("Solicitud de Permiso"),
     LICENCIA("Licencia Médica"),
-    INSUMOS("Solicitud Insumos"),
-    OTRO("Otro")
+    ANTECEDENTES("Antecedentes Personales"),
+    HISTORIAL("Informe / Historial")
 }
 
 enum class EstadoDocumento(val etiqueta: String) {
-    PENDIENTE("Pendiente"),
+    PENDIENTE("Pendiente de Revisión"),
     EN_REVISION("En Revisión"),
-    VALIDADO("Validado")
+    VALIDADO("Aprobado / Validado"),
+    RECHAZADO("Rechazado")
 }
 
 @Entity(tableName = "documentos")
@@ -29,5 +38,10 @@ data class DocumentoFuncionario(
     val fecha: String,
     val observaciones: String,
     val estado: EstadoDocumento = EstadoDocumento.PENDIENTE,
-    val rutaFoto: String? = null
+    val rutaFoto: String? = null,
+    // Campos RF12: Trazabilidad, versión y rechazo
+    val motivoRechazo: String = "",
+    val revisadoPor: String = "",
+    val fechaModificacion: String = "",
+    val version: Int = 1
 )

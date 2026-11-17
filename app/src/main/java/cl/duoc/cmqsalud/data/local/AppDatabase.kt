@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import cl.duoc.cmqsalud.model.DocumentoFuncionario
 
-@Database(entities = [DocumentoFuncionario::class], version = 1, exportSchema = false)
+@Database(entities = [DocumentoFuncionario::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun documentoDao(): DocumentoDao
 
@@ -20,7 +20,10 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "cmq_salud_db"
-                ).build().also { INSTANCE = it }
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }

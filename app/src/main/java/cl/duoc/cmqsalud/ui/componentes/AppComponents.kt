@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
@@ -33,6 +35,7 @@ fun BadgeEstado(
         EstadoDocumento.EN_REVISION -> Color(0xFFFFF3E0) to Color(0xFFE65100)
         EstadoDocumento.VALIDADO -> Color(0xFFE0F2F1) to Color(0xFF00695C)
         EstadoDocumento.PENDIENTE -> Color(0xFFECEFF1) to Color(0xFF546E7A)
+        EstadoDocumento.RECHAZADO -> Color(0xFFFFEBEE) to Color(0xFFC62828)
     }
 
     Text(
@@ -51,11 +54,17 @@ fun BadgeEstado(
 @Composable
 fun TarjetaExpediente(
     doc: DocumentoFuncionario,
+    puedeAprobarRechazar: Boolean,
+    puedeEliminar: Boolean,
     onVerDetalle: () -> Unit,
     onEditar: () -> Unit,
     onEliminar: () -> Unit,
-    onCambiarEstado: () -> Unit
+    onAprobar: () -> Unit,
+    onRechazar: () -> Unit
 ) {
+    // Limpia cualquier RUT entre paréntesis en documentos guardados anteriormente
+    val revisorLimpio = doc.revisadoPor.substringBefore(" (").trim()
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -64,37 +73,121 @@ fun TarjetaExpediente(
             .fillMaxWidth()
             .clickable { onVerDetalle() }
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE0F2F1)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Description, contentDescription = null, tint = TealColor)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFE0F2F1)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Description, contentDescription = null, tint = TealColor)
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = doc.titulo,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = DarkNavyColor,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "v${doc.version}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TealColor
+                        )
+                    }
+                    Text(
+                        text = "${doc.categoria.etiqueta} • ${doc.centroSalud}",
+                        color = Color.Gray,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = "Fecha: ${doc.fecha}",
+                        color = Color.Gray,
+                        fontSize = 11.sp
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    BadgeEstado(estado = doc.estado)
+                }
+
+                IconButton(onClick = onEditar) {
+                    Icon(Icons.Default.Edit, contentDescription = "Modificar / Corregir", tint = Color.Gray)
+                }
+                if (puedeEliminar) {
+                    IconButton(onClick = onEliminar) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = doc.titulo, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = DarkNavyColor)
-                Text(text = "${doc.fecha} •${doc.centroSalud}", color = Color.Gray, fontSize = 12.sp)
-                Spacer(modifier = Modifier.height(4.dp))
-                BadgeEstado(
-                    estado = doc.estado,
-                    onClick = onCambiarEstado
+            if (doc.estado == EstadoDocumento.RECHAZADO && doc.motivoRechazo.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFFFEBEE))
+                        .padding(10.dp)
+                ) {
+                    Text(
+                        text = "Motivo de rechazo: ${doc.motivoRechazo}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFC62828)
+                    )
+                    Text(
+                        text = "Revisado por: $revisorLimpio (${doc.fechaModificacion}) • Pulse el lápiz para corregir y reenviar.",
+                        fontSize = 11.sp,
+                        color = Color(0xFFB71C1C)
+                    )
+                }
+            } else if (revisorLimpio.isNotBlank()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Revisado por: $revisorLimpio (${doc.fechaModificacion})",
+                    fontSize = 11.sp,
+                    color = Color.Gray
                 )
             }
 
-            IconButton(onClick = onEditar) {
-                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.Gray)
-            }
-            IconButton(onClick = onEliminar) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+            if (puedeAprobarRechazar && doc.estado != EstadoDocumento.VALIDADO) {
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = Color(0xFFEEEEEE))
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    OutlinedButton(
+                        onClick = onRechazar,
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFC62828)),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier.height(34.dp)
+                    ) {
+                        Icon(Icons.Default.Cancel, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Rechazar", fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = onAprobar,
+                        colors = ButtonDefaults.buttonColors(containerColor = TealColor),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier.height(34.dp)
+                    ) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Aprobar", fontSize = 12.sp, color = Color.White)
+                    }
+                }
             }
         }
     }

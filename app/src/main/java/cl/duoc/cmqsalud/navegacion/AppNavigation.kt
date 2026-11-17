@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import cl.duoc.cmqsalud.model.PerfilUsuario
 import cl.duoc.cmqsalud.ui.home.HomeScreen
 import cl.duoc.cmqsalud.ui.login.LoginScreen
 import cl.duoc.cmqsalud.ui.registro.RegistroScreen
@@ -23,13 +24,15 @@ fun CMQSaludApp(viewModel: DocumentoViewModel = viewModel()) {
 
     var usuarioSesion by remember { mutableStateOf("18.452.123-K") }
     var centroSesion by remember { mutableStateOf("CESFAM Quilpué") }
+    var perfilSesion by remember { mutableStateOf(PerfilUsuario.FUNCIONARIO) }
 
     NavHost(navController = navController, startDestination = LoginRoute) {
         composable<LoginRoute> {
             LoginScreen(
-                onLoginSuccess = { usuario, centro ->
+                onLoginSuccess = { usuario, centro, perfil ->
                     usuarioSesion = usuario
                     centroSesion = centro
+                    perfilSesion = perfil
                     navController.navigate(HomeRoute) {
                         popUpTo(LoginRoute) { inclusive = true }
                     }
@@ -41,9 +44,11 @@ fun CMQSaludApp(viewModel: DocumentoViewModel = viewModel()) {
             HomeScreen(
                 usuarioActivo = usuarioSesion,
                 centroActivo = centroSesion,
+                perfilActivo = perfilSesion,
                 documentos = documentos,
                 onNuevoDocumento = {
                     viewModel.limpiarFormulario()
+                    viewModel.onCentroChange(centroSesion)
                     navController.navigate(RegistroRoute)
                 },
                 onEditarDocumento = { doc ->
@@ -53,8 +58,11 @@ fun CMQSaludApp(viewModel: DocumentoViewModel = viewModel()) {
                 onEliminarDocumento = { doc ->
                     viewModel.eliminarDocumento(doc)
                 },
-                onCambiarEstado = { doc ->
-                    viewModel.cambiarSiguienteEstado(doc)
+                onAprobarDocumento = { doc ->
+                    viewModel.aprobarDocumento(doc, perfilSesion.etiqueta)
+                },
+                onRechazarDocumento = { doc, motivo ->
+                    viewModel.rechazarDocumento(doc, motivo, perfilSesion.etiqueta)
                 },
                 onCerrarSesion = {
                     navController.navigate(LoginRoute) {
@@ -63,6 +71,7 @@ fun CMQSaludApp(viewModel: DocumentoViewModel = viewModel()) {
                 }
             )
         }
+
         composable<RegistroRoute> {
             RegistroScreen(
                 state = viewModel.uiState,
@@ -72,7 +81,7 @@ fun CMQSaludApp(viewModel: DocumentoViewModel = viewModel()) {
                 onObservacionesChange = viewModel::onObservacionesChange,
                 onFotoCapturada = viewModel::onFotoCapturada,
                 onGuardar = {
-                    viewModel.guardarDocumento {
+                    viewModel.guardarDocumento(usuarioSesion) {
                         navController.popBackStack()
                     }
                 },
